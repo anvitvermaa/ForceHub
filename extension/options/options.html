@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://codeforces.com https://api.github.com https://*.workers.dev;" />
+<title>ForceHub — Setup</title>
+<style>
+@font-face { font-family: "JetBrains Mono"; src: local("JetBrains Mono"), local("Menlo"), local("Consolas"); }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-raised: #1c2128;
+  --border: #21262d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #ff7b54;
+  --success: #3fb950;
+  --danger: #f85149;
+  --warning: #d29922;
+  --radius: 6px;
+  --mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 16px 60px;
+}
+
+.page { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 24px; }
+
+/* ── header ── */
+.header { display: flex; align-items: baseline; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.brand-mark { color: var(--success); font-weight: 700; font-size: 18px; }
+.brand-name { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.brand-accent { color: var(--accent); }
+.header-sub { color: var(--text-dim); font-size: 12px; margin-left: auto; }
+
+/* ── progress bar ── */
+.progress-bar {
+  display: flex; gap: 0; border-radius: var(--radius); overflow: hidden;
+  border: 1px solid var(--border);
+}
+.progress-step {
+  flex: 1; padding: 8px 12px; font-size: 11px; text-align: center;
+  color: var(--text-dim); background: var(--surface); border-right: 1px solid var(--border);
+  transition: background 0.2s, color 0.2s;
+}
+.progress-step:last-child { border-right: none; }
+.progress-step.active { background: var(--accent); color: #1a0f0a; font-weight: 700; }
+.progress-step.done { background: var(--surface-raised); color: var(--success); }
+
+/* ── card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.card.hidden { display: none; }
+
+.card-title { font-size: 13px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+.card-desc { color: var(--text-dim); font-size: 12px; line-height: 1.6; }
+.card-desc a { color: var(--accent); text-decoration: none; }
+.card-desc a:hover { text-decoration: underline; }
+.card-desc code { background: var(--bg); padding: 1px 5px; border-radius: 3px; color: var(--success); font-size: 11px; }
+
+/* ── inputs ── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.text-input, .select-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 12px; border-radius: var(--radius);
+  font-family: var(--mono); font-size: 13px;
+  transition: border-color 0.15s, outline 0.15s;
+}
+.text-input:focus, .select-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+.text-input.error { border-color: var(--danger); }
+.text-input.ok { border-color: var(--success); }
+
+/* ── status / messages ── */
+.status-msg {
+  font-size: 12px; padding: 10px 12px; border-radius: var(--radius);
+  border: 1px solid transparent; line-height: 1.5;
+}
+.status-msg.hidden { display: none; }
+.status-msg.info  { border-color: var(--border); color: var(--text-dim); background: var(--surface-raised); }
+.status-msg.ok    { border-color: var(--success); color: var(--success); background: #0d2b14; }
+.status-msg.error { border-color: var(--danger);  color: var(--danger);  background: #2d0f0f; }
+.status-msg.loading { border-color: var(--border); color: var(--text-dim); background: var(--surface-raised); }
+
+/* ── buttons ── */
+.btn-row { display: flex; gap: 10px; }
+.btn {
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  padding: 10px 18px; border-radius: var(--radius); border: 1px solid transparent;
+  cursor: pointer; transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--accent); color: #1a0f0a; flex: 1; }
+.btn-primary:not(:disabled):hover { background: #ff8f6e; }
+.btn-secondary { background: var(--surface-raised); color: var(--text); border-color: var(--border); flex: 1; }
+.btn-secondary:not(:disabled):hover { border-color: var(--text-dim); }
+.btn-danger { background: none; color: var(--danger); border-color: var(--danger); }
+.btn-danger:not(:disabled):hover { background: var(--danger); color: var(--bg); }
+.btn-link { background: none; border: none; color: var(--text-dim); font-size: 12px; padding: 0; cursor: pointer; }
+.btn-link:hover { color: var(--text); text-decoration: underline; }
+
+/* ── connected badge ── */
+.connected-badge {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-raised); border: 1px solid var(--success);
+  border-radius: var(--radius); padding: 10px 14px;
+}
+.connected-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+.connected-badge .name { font-size: 13px; font-weight: 600; flex: 1; }
+.connected-badge.hidden { display: none; }
+
+/* ── repo select ── */
+.repo-section { display: flex; flex-direction: column; gap: 10px; }
+.repo-or { text-align: center; color: var(--text-dim); font-size: 11px; }
+
+/* ── settings section ── */
+.settings-section { display: flex; flex-direction: column; gap: 20px; }
+.settings-group { display: flex; flex-direction: column; gap: 8px; }
+.settings-group-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.account-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--surface-raised); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 14px;
+}
+.account-row-name { font-size: 13px; }
+
+/* ── all-done ── */
+.done-banner {
+  background: #0d2b14; border: 1px solid var(--success);
+  border-radius: var(--radius); padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+}
+.done-banner.hidden { display: none; }
+.done-title { font-size: 15px; font-weight: 700; color: var(--success); }
+.done-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+.done-desc strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <span class="brand-mark">&gt;_</span>
+    <span class="brand-name">Force<span class="brand-accent">Hub</span></span>
+    <span class="header-sub">Setup &amp; Settings</span>
+  </div>
+
+  <!-- progress indicator -->
+  <div class="progress-bar">
+    <div class="progress-step" id="prog1">01 Codeforces</div>
+    <div class="progress-step" id="prog2">02 GitHub</div>
+    <div class="progress-step" id="prog3">03 Repository</div>
+    <div class="progress-step" id="prog4">04 Done</div>
+  </div>
+
+  <!-- ── STEP 1: Codeforces ── -->
+  <div class="card" id="cardCf">
+    <div class="card-title">01 — Verify Codeforces account</div>
+    <div class="card-desc">
+      Generate an API key + secret at
+      <a href="https://codeforces.com/settings/api" target="_blank" rel="noopener">codeforces.com/settings/api</a>
+      (click <strong>Add API key</strong>). This proves you own the account — not just that the handle exists.
+      <br><br>
+      Your credentials are stored <strong>only on this device</strong> and sent nowhere except directly to
+      <code>codeforces.com</code> as a cryptographic signature.
+    </div>
+
+    <div id="cfConnectedBadge" class="connected-badge hidden">
+      <span class="dot"></span>
+      <span class="name" id="cfConnectedName"></span>
+      <button class="btn-link" id="cfChangeBtn">Change</button>
+    </div>
+
+    <div id="cfForm">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="field">
+          <label class="field-label" for="cfHandle">Codeforces handle</label>
+          <input id="cfHandle" class="text-input" type="text" placeholder="tourist" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="cfApiKey">API Key</label>
+          <input id="cfApiKey" class="text-input" type="text" placeholder="abcdef1234567890" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="cfApiSecret">API Secret</label>
+          <!-- password type so it's masked — can't tab away and expose it -->
+          <input id="cfApiSecret" class="text-input" type="password" placeholder="••••••••••••••••" autocomplete="off" />
+        </div>
+        <div id="cfStatus" class="status-msg hidden"></div>
+        <div class="btn-row">
+          <button id="cfVerifyBtn" class="btn btn-primary">Verify &amp; continue →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: GitHub ── -->
+  <div class="card hidden" id="cardGithub">
+    <div class="card-title">02 — Connect GitHub</div>
+    <div class="card-desc">
+      ForceHub requests only the <code>repo</code> OAuth scope — the minimum needed to create commits.
+      Your token is stored locally and only sent to <code>api.github.com</code>.
+    </div>
+
+    <div id="ghConnectedBadge" class="connected-badge hidden">
+      <span class="dot"></span>
+      <span class="name" id="ghConnectedName"></span>
+      <button class="btn-link" id="ghChangeBtn">Disconnect</button>
+    </div>
+
+    <div id="ghForm">
+      <div id="ghStatus" class="status-msg hidden"></div>
+      <div class="btn-row">
+        <button id="ghConnectBtn" class="btn btn-primary">Connect GitHub →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Repository ── -->
+  <div class="card hidden" id="cardRepo">
+    <div class="card-title">03 — Choose a repository</div>
+    <div class="card-desc">
+      Pick an existing repo or create a new one. ForceHub will push your solutions here as commits.
+    </div>
+
+    <div id="repoStatus" class="status-msg hidden"></div>
+
+    <div class="repo-section">
+      <div class="field">
+        <label class="field-label" for="repoSelect">Existing repository</label>
+        <select id="repoSelect" class="select-input">
+          <option value="">Loading your repositories…</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button id="repoConfirmBtn" class="btn btn-primary" disabled>Use this repo →</button>
+      </div>
+
+      <div class="repo-or">— or —</div>
+
+      <div class="field">
+        <label class="field-label" for="newRepoName">New repository name</label>
+        <input id="newRepoName" class="text-input" type="text" value="codeforces-solutions" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="btn-row">
+        <button id="createRepoBtn" class="btn btn-secondary">Create new repo →</button>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:8px;">
+      <label class="field-label" for="organizeBy">Organize files by</label>
+      <select id="organizeBy" class="select-input">
+        <option value="rating">Rating (800/, 1000/, 1200/…)</option>
+        <option value="contest">Contest (1500/A-Two-Sum/…)</option>
+        <option value="topic">Topic / tag (dp/, greedy/…)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: Done ── -->
+  <div class="done-banner hidden" id="doneBanner">
+    <div class="done-title">✓ ForceHub is active</div>
+    <div class="done-desc">
+      Syncing <strong id="doneHandle"></strong> → <strong id="doneRepo"></strong>
+      every 30 seconds. Solve something on Codeforces and the commit will appear automatically.
+      <br><br>
+      You can close this tab. Click the ForceHub icon in your toolbar to see your dashboard.
+    </div>
+  </div>
+
+  <!-- ── SETTINGS (always visible once set up) ── -->
+  <div class="card hidden" id="cardSettings">
+    <div class="card-title">Settings</div>
+
+    <div class="settings-section">
+      <div class="settings-group">
+        <div class="settings-group-label">Codeforces account</div>
+        <div class="account-row">
+          <span class="account-row-name" id="settingsCfName">—</span>
+          <button id="settingsDisconnectCf" class="btn btn-danger">Disconnect</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">GitHub account</div>
+        <div class="account-row">
+          <span class="account-row-name" id="settingsGhName">—</span>
+          <button id="settingsDisconnectGh" class="btn btn-danger">Disconnect</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">Repository</div>
+        <div class="account-row">
+          <span class="account-row-name" id="settingsRepo">—</span>
+          <button id="settingsChangeRepo" class="btn btn-secondary" style="flex:none;padding:6px 12px;font-size:11px;">Change</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-group-label" for="settingsOrganizeBy">Organize files by</label>
+        <select id="settingsOrganizeBy" class="select-input">
+          <option value="rating">Rating</option>
+          <option value="contest">Contest</option>
+          <option value="topic">Topic / tag</option>
+        </select>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">Backfill old solves</div>
+        <div class="card-desc" style="margin-bottom:8px;">Push every past Accepted solution that hasn't been synced yet. One-time — won't duplicate anything already pushed.</div>
+        <button id="settingsBackfill" class="btn btn-secondary">Backfill past solutions</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script type="module" src="options.js"></script>
+</body>
+</html>

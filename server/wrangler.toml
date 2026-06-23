@@ -1,0 +1,10 @@
+name = "forcehub-auth"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+
+# Secrets (set via CLI, never commit real values):
+#   wrangler secret put GITHUB_CLIENT_ID
+#   wrangler secret put GITHUB_CLIENT_SECRET
+#
+# Deploy:
+#   wrangler deploy

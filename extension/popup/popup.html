@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://codeforces.com https://api.github.com https://*.workers.dev;" />
+<title>ForceHub</title>
+<link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app" class="app">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">&gt;_</span>
+        <span class="brand-name">Force<span class="brand-accent">Hub</span></span>
+      </div>
+      <button id="settingsBtn" class="icon-btn" title="Open settings" aria-label="Open settings">⚙</button>
+    </header>
+
+    <!-- NOT CONFIGURED: prompt to open the setup page -->
+    <section id="setupPromptView" class="view hidden">
+      <div class="setup-prompt">
+        <div class="setup-prompt-icon">⚡</div>
+        <div class="setup-prompt-title">Setup required</div>
+        <div class="setup-prompt-desc">Connect your Codeforces account and GitHub to start syncing.</div>
+        <button id="openSetupBtn" class="btn btn-primary">Open setup →</button>
+      </div>
+    </section>
+
+    <!-- DASHBOARD: shown once fully connected -->
+    <section id="dashboardView" class="view hidden">
+
+      <div class="status-row">
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          <span id="statusText">Watching for submissions…</span>
+        </div>
+        <button id="manualSyncBtn" class="btn btn-tiny">Sync now</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="streakValue">—</div>
+          <div class="stat-label">day streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="solvedValue">—</div>
+          <div class="stat-label">solved &amp; pushed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="ratingValue">—</div>
+          <div class="stat-label" id="rankLabel">rating</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Rating distribution</div>
+        <div id="ratingHistogram" class="histogram"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Languages</div>
+        <div id="languageBars" class="lang-bars"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">When you solve (UTC)</div>
+        <div id="solveHeatmap" class="heatmap" aria-label="Solve time heatmap by day and hour"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          Sync log
+          <span class="panel-sub" id="pendingBadge"></span>
+        </div>
+        <div id="syncLog" class="sync-log"></div>
+      </div>
+
+    </section>
+
+    <footer class="footer">ForceHub — open source</footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
