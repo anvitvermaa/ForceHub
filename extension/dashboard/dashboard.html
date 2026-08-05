@@ -28,6 +28,73 @@
       }
       .starburst-text small { font-size: 11px; font-weight: normal; text-transform: none; font-style: italic; display: block; margin-top: 3px; }
       .mascot-img { width: 52px; height: 52px; flex-shrink: 0; }
+
+      /* ── tabs ── */
+      .tab-bar {
+        display: flex; gap: 4px; padding: 0 1rem; border-bottom: 2px solid #bbb;
+        margin-bottom: 1.5rem; flex-wrap: wrap;
+      }
+      .tab-btn {
+        padding: 10px 22px; font-size: 14px; font-weight: 600;
+        font-family: Arial, 'MS Sans Serif', sans-serif;
+        background: #d4d0c8; border: 2px solid #888;
+        border-bottom: none; cursor: pointer; color: #333;
+        border-radius: 4px 4px 0 0; transition: background 0.15s;
+        letter-spacing: 0.5px;
+      }
+      .tab-btn:hover { background: #e8e4dc; }
+      .tab-btn.active { background: #fff; color: #000080; border-color: #bbb; font-weight: 700; }
+
+      .tab-panel { display: none; }
+      .tab-panel.active { display: block; }
+
+      /* ── solve speed ── */
+      .speed-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .speed-table th {
+        background: #000080; color: #fff; padding: 10px 14px; text-align: left;
+        font-family: Arial, sans-serif; font-size: 13px; font-weight: 600;
+      }
+      .speed-table td { padding: 9px 14px; border-bottom: 1px solid #ddd; vertical-align: middle; }
+      .speed-table tr:nth-child(even) { background: #f4f4f0; }
+      .speed-table tr:hover { background: #e8f0ff; }
+      .speed-pill {
+        display: inline-block; padding: 2px 10px; border-radius: 12px;
+        font-size: 12px; font-weight: 700; color: #fff;
+      }
+      .speed-fast { background: #2ecc71; }
+      .speed-med  { background: #f39c12; }
+      .speed-slow { background: #e74c3c; }
+      .rating-chip {
+        display: inline-block; padding: 2px 8px; border-radius: 4px;
+        font-size: 12px; font-weight: 700; color: #fff;
+      }
+
+      /* ── time heatmap ── */
+      .hour-grid {
+        display: grid; grid-template-columns: repeat(24, 1fr);
+        gap: 4px; margin-top: 1rem;
+      }
+      .hour-cell {
+        aspect-ratio: 1; border-radius: 4px; background: #eee;
+        cursor: default; transition: transform 0.1s;
+        position: relative;
+      }
+      .hour-cell:hover { transform: scale(1.3); z-index: 10; }
+      .hour-labels {
+        display: grid; grid-template-columns: repeat(24, 1fr);
+        gap: 4px; margin-top: 4px;
+      }
+      .hour-labels span {
+        text-align: center; font-size: 10px; color: #666;
+      }
+      .day-heatmap-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+      .day-label { width: 32px; font-size: 12px; color: #666; text-align: right; flex-shrink: 0; }
+      .day-cells { display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px; flex: 1; }
+      .day-cell {
+        width: 100%; aspect-ratio: 1; border-radius: 3px; background: #eee;
+        cursor: default; transition: transform 0.1s;
+      }
+      .day-cell:hover { transform: scale(1.4); z-index: 10; }
     </style>
   </head>
   <body>
@@ -92,56 +159,133 @@
         </div>
       </section>
 
-      <!-- Heatmap -->
-      <section class="card heatmap-section">
-        <h2>Solve Activity (Last 12 Months)</h2>
-        <div class="heatmap-container">
-          <div id="heatmap" class="heatmap"></div>
-        </div>
-        <div class="heatmap-legend">
-          <span>Less</span>
-          <div class="legend-scale">
-            <div class="legend-box l0"></div>
-            <div class="legend-box l1"></div>
-            <div class="legend-box l2"></div>
-            <div class="legend-box l3"></div>
-            <div class="legend-box l4"></div>
-          </div>
-          <span>More</span>
-        </div>
-      </section>
+      <!-- TAB BAR -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="speed">Solve Speed</button>
+        <button class="tab-btn" data-tab="timeheat">Time Heatmap</button>
+        <button class="tab-btn" data-tab="topics">Topics & Languages</button>
+      </div>
 
-      <!-- Charts Row -->
-      <section class="charts-row">
-        <div class="card chart-card">
-          <h2>Rating Progress</h2>
-          <div class="chart-wrapper">
-            <canvas id="ratingChart"></canvas>
+      <!-- TAB: Overview -->
+      <div class="tab-panel active" id="tab-overview">
+        <!-- Heatmap -->
+        <section class="card heatmap-section">
+          <h2>Solve Activity (Last 12 Months)</h2>
+          <div class="heatmap-container">
+            <div id="heatmap" class="heatmap"></div>
           </div>
-        </div>
-        <div class="card chart-card">
-          <h2>Difficulty Distribution</h2>
-          <div class="chart-wrapper">
-            <canvas id="difficultyChart"></canvas>
+          <div class="heatmap-legend">
+            <span>Less</span>
+            <div class="legend-scale">
+              <div class="legend-box l0"></div>
+              <div class="legend-box l1"></div>
+              <div class="legend-box l2"></div>
+              <div class="legend-box l3"></div>
+              <div class="legend-box l4"></div>
+            </div>
+            <span>More</span>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Breakdown Row -->
-      <section class="charts-row">
-        <div class="card chart-card list-card">
-          <h2>Topics Mastered</h2>
-          <div class="topics-list" id="topicsList">
-            <!-- Populated by JS -->
+        <!-- Charts Row -->
+        <section class="charts-row">
+          <div class="card chart-card">
+            <h2>Rating Progress</h2>
+            <div class="chart-wrapper">
+              <canvas id="ratingChart"></canvas>
+            </div>
           </div>
-        </div>
-        <div class="card chart-card list-card">
-          <h2>Languages</h2>
-          <div class="lang-list" id="langList">
-            <!-- Populated by JS -->
+          <div class="card chart-card">
+            <h2>Difficulty Distribution</h2>
+            <div class="chart-wrapper">
+              <canvas id="difficultyChart"></canvas>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
+
+      <!-- TAB: Solve Speed -->
+      <div class="tab-panel" id="tab-speed">
+        <section class="card" style="padding: 1.5rem;">
+          <h2 style="margin-bottom: 0.5rem;">Contest Solve Speed</h2>
+          <p style="color: #555; font-size: 13px; margin-bottom: 1.5rem;">
+            Time from contest start to your first Accepted submission — by problem, topic, and rating.
+            <br><strong>Green</strong> = under 20 min &nbsp;|&nbsp; <strong>Orange</strong> = 20–60 min &nbsp;|&nbsp; <strong>Red</strong> = over 60 min
+          </p>
+          <div style="overflow-x: auto;">
+            <table class="speed-table" id="speedTable">
+              <thead>
+                <tr>
+                  <th>Problem</th>
+                  <th>Contest</th>
+                  <th>Topics</th>
+                  <th>Rating</th>
+                  <th>Time to AC</th>
+                </tr>
+              </thead>
+              <tbody id="speedTableBody">
+                <tr><td colspan="5" style="text-align:center; color:#888; padding: 2rem;">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card" style="margin-top: 1.5rem; padding: 1rem;">
+            <h2 style="margin-bottom: 0.5rem;">Speed Trend</h2>
+            <p style="color: #555; font-size: 13px; margin-bottom: 1rem;">Average solve time per month — are you getting faster?</p>
+            <div class="chart-wrapper">
+              <canvas id="speedTrendChart"></canvas>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- TAB: Time Heatmap -->
+      <div class="tab-panel" id="tab-timeheat">
+        <section class="card" style="padding: 1.5rem;">
+          <h2 style="margin-bottom: 0.5rem;">When Do You Solve?</h2>
+          <p style="color: #555; font-size: 13px; margin-bottom: 1.5rem;">
+            Accepted submissions by hour of day and day of week. Darker = more solves.
+          </p>
+
+          <h3 style="font-size: 14px; color: #000080; margin-bottom: 8px;">By Hour of Day (all time)</h3>
+          <div class="hour-grid" id="hourGrid"></div>
+          <div class="hour-labels" id="hourLabels"></div>
+
+          <h3 style="font-size: 14px; color: #000080; margin: 1.5rem 0 8px;">By Day × Hour</h3>
+          <div id="dayHourGrid" style="margin-top: 0.5rem;"></div>
+
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 1rem;">
+            <span style="font-size: 12px; color: #666;">Less</span>
+            <div style="display:flex; gap:4px;">
+              <div style="width:16px;height:16px;border-radius:3px;background:#ebedf0;"></div>
+              <div style="width:16px;height:16px;border-radius:3px;background:#9be9a8;"></div>
+              <div style="width:16px;height:16px;border-radius:3px;background:#40c463;"></div>
+              <div style="width:16px;height:16px;border-radius:3px;background:#30a14e;"></div>
+              <div style="width:16px;height:16px;border-radius:3px;background:#216e39;"></div>
+            </div>
+            <span style="font-size: 12px; color: #666;">More</span>
+          </div>
+        </section>
+      </div>
+
+      <!-- TAB: Topics & Languages -->
+      <div class="tab-panel" id="tab-topics">
+        <section class="charts-row">
+          <div class="card chart-card list-card">
+            <h2>Topics Mastered</h2>
+            <div class="topics-list" id="topicsList">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+          <div class="card chart-card list-card">
+            <h2>Languages</h2>
+            <div class="lang-list" id="langList">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </section>
+      </div>
 
       <!-- Footer Info -->
       <section class="banner" style="flex-direction: column; align-items: flex-start; gap: 1rem; margin-top: 2rem; background: #d4d0c8; border: 2px outset #fff;">

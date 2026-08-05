@@ -1,6 +1,6 @@
 import { renderHeatmap } from './heatmap.js';
 import { cfFetchSigned } from '../lib/codeforces.js';
-import { computeStreak, computeLanguageBreakdown, computeRatingHistogram, computeSolveTimeHeatmap, dedupeLatestPerProblem } from '../lib/insights.js';
+import { computeStreak, computeLanguageBreakdown, computeRatingHistogram, dedupeLatestPerProblem } from '../lib/insights.js';
 
 // DOM Elements
 const dashboard = document.getElementById('dashboard');
@@ -11,8 +11,19 @@ const emptyState = document.getElementById('emptyState');
 // Chart Instances
 let ratingChartInstance = null;
 let diffChartInstance = null;
+let speedTrendChartInstance = null;
 
-// Initialization
+// ── Tab Logic ──────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Initialization ─────────────────────────────────────────
 async function init() {
   chrome.storage.local.get(['fh_cf_handle', 'fh_cf_api_key', 'fh_cf_api_secret'], async (res) => {
     const handle = res.fh_cf_handle;
@@ -30,7 +41,6 @@ async function init() {
 }
 
 async function loadUserDashboard(handle, apiKey, apiSecret) {
-  // Reset View
   emptyState.style.display = 'none';
   errorState.style.display = 'none';
   dashboard.style.display = 'none';
@@ -39,7 +49,7 @@ async function loadUserDashboard(handle, apiKey, apiSecret) {
   try {
     const [infoData, statusData, ratingData] = await Promise.all([
       cfFetchSigned('user.info', { handles: handle }, apiKey, apiSecret),
-      cfFetchSigned('user.status', { handle, count: '500' }, apiKey, apiSecret),
+      cfFetchSigned('user.status', { handle, count: '1000' }, apiKey, apiSecret),
       cfFetchSigned('user.rating', { handle }, apiKey, apiSecret)
     ]);
     
@@ -62,52 +72,254 @@ function renderDashboard(user, submissions, ratingHistory) {
   document.getElementById('userRank').textContent = user.rank || "Unrated";
   document.getElementById('userRating').textContent = user.rating ? `Rating: ${user.rating}` : "Unrated";
   document.getElementById('userMaxRating').textContent = user.maxRating ? `Max: ${user.maxRating}` : "";
-  
-  // Apply colors based on rating
   document.getElementById('userRank').style.color = getRatingColor(user.rating);
 
-  // 2. Process Submissions (Filter Accepted, Deduplicate)
+  // 2. Filter & dedupe
   const allAccepted = submissions.filter(s => s.verdict === 'OK');
   const uniqueAccepted = dedupeLatestPerProblem(allAccepted);
   
   document.getElementById('totalSolved').textContent = uniqueAccepted.length;
   document.getElementById('totalSubmissions').textContent = submissions.length;
 
-  // 3. Compute Streak using extension's insight module
+  // 3. Streak
   const streakInfo = computeStreak(allAccepted);
   document.getElementById('currentStreak').textContent = streakInfo.current;
   document.getElementById('longestStreak').textContent = streakInfo.longest;
   document.getElementById('activeDays').textContent = streakInfo.activeDays;
 
-  // 4. Compute Topics & Languages
+  // 4. Topics & Languages
   const topics = computeTopics(uniqueAccepted);
   document.getElementById('totalTopics').textContent = Object.keys(topics).length;
-  
   const langs = computeLanguageBreakdown(allAccepted);
-  
-  // 5. Avg Rating Solved
+
+  // 5. Avg Rating
   const ratedProblems = uniqueAccepted.filter(s => s.problem.rating);
-  const avg = ratedProblems.length > 0 
+  const avg = ratedProblems.length > 0
     ? Math.round(ratedProblems.reduce((sum, s) => sum + s.problem.rating, 0) / ratedProblems.length)
     : 0;
   document.getElementById('avgRating').textContent = avg;
 
-  // 6. Render Heatmap
+  // 6. Overview Tab
   renderHeatmap(uniqueAccepted, document.getElementById('heatmap'));
-
-  // 7. Render Charts
   renderRatingChart(ratingHistory);
-  // Re-use computeRatingHistogram
   const hist = computeRatingHistogram(uniqueAccepted);
   renderDifficultyChartFromHist(hist);
 
-  // 8. Render Topic/Lang Lists
+  // 7. Topics & Languages Tab
   renderList('topicsList', topics, uniqueAccepted.length);
   renderList('langList', langs, allAccepted.length);
+
+  // 8. Solve Speed Tab
+  renderSolveSpeedTable(submissions, ratingHistory);
+
+  // 9. Time Heatmap Tab
+  renderTimeHeatmap(allAccepted);
 }
 
-// --- Stats Logic ---
+// ── Solve Speed ────────────────────────────────────────────
+function renderSolveSpeedTable(submissions, ratingHistory) {
+  // Build a map: contestId → startTimeSeconds
+  const contestStarts = {};
+  for (const r of ratingHistory) {
+    // ratingHistory has ratingUpdateTimeSeconds — we need contest start.
+    // We'll use submission creationTimeSeconds - relativeTimeSeconds as contest start.
+  }
 
+  // Filter contest submissions with relativeTimeSeconds (only in-contest subs have this > 0)
+  const contestSubs = submissions.filter(s =>
+    s.verdict === 'OK' &&
+    s.author && s.author.participantType === 'CONTESTANT' &&
+    typeof s.relativeTimeSeconds === 'number' &&
+    s.relativeTimeSeconds >= 0 &&
+    s.relativeTimeSeconds < 86400 // within 24h of contest start
+  );
+
+  const tbody = document.getElementById('speedTableBody');
+  
+  if (contestSubs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#888;padding:2rem;">
+      No in-contest accepted submissions found.<br>
+      <small style="color:#aaa;">Only submissions made during live contests are tracked here.</small>
+    </td></tr>`;
+    renderSpeedTrendChart([]);
+    return;
+  }
+
+  // Sort by fastest first
+  const sorted = [...contestSubs].sort((a, b) => a.relativeTimeSeconds - b.relativeTimeSeconds);
+
+  tbody.innerHTML = '';
+  for (const s of sorted.slice(0, 100)) {
+    const mins = Math.round(s.relativeTimeSeconds / 60);
+    const rating = s.problem.rating || null;
+    const tags = (s.problem.tags || []).slice(0, 3).join(', ') || '—';
+    const problemName = `${s.problem.contestId}${s.problem.index}. ${s.problem.name}`;
+
+    let speedClass = 'speed-slow';
+    let speedLabel = `${mins}m`;
+    if (mins < 20) { speedClass = 'speed-fast'; }
+    else if (mins < 60) { speedClass = 'speed-med'; }
+
+    const ratingColor = rating ? getRatingColor(rating) : '#999';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><a href="https://codeforces.com/contest/${s.problem.contestId}/problem/${s.problem.index}" 
+            target="_blank" style="color:#000080;text-decoration:none;font-weight:600;"
+            title="${problemName}">${problemName.length > 40 ? problemName.slice(0, 40) + '…' : problemName}</a></td>
+      <td style="color:#555;">#${s.problem.contestId}</td>
+      <td style="font-size:12px;color:#444;">${tags}</td>
+      <td><span class="rating-chip" style="background:${ratingColor};">${rating || 'N/A'}</span></td>
+      <td><span class="speed-pill ${speedClass}">${speedLabel}</span></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Speed trend: avg solve time per month
+  renderSpeedTrendChart(contestSubs);
+}
+
+function renderSpeedTrendChart(contestSubs) {
+  const ctx = document.getElementById('speedTrendChart').getContext('2d');
+  if (speedTrendChartInstance) speedTrendChartInstance.destroy();
+
+  if (!contestSubs.length) return;
+
+  // Group by month
+  const byMonth = {};
+  for (const s of contestSubs) {
+    const d = new Date(s.creationTimeSeconds * 1000);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(Math.round(s.relativeTimeSeconds / 60));
+  }
+
+  const labels = Object.keys(byMonth).sort();
+  const data = labels.map(k => {
+    const arr = byMonth[k];
+    return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+  });
+
+  speedTrendChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Avg mins to AC',
+        data,
+        borderColor: '#000080',
+        backgroundColor: 'rgba(0,0,128,0.08)',
+        fill: true,
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 4,
+        pointBackgroundColor: '#000080',
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.parsed.y} min avg`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#333' }, grid: { color: '#eee' } },
+        y: {
+          ticks: { color: '#333', callback: v => `${v}m` },
+          grid: { color: '#eee' },
+          title: { display: true, text: 'Minutes', color: '#555' }
+        }
+      }
+    }
+  });
+}
+
+// ── Time Heatmap ───────────────────────────────────────────
+function renderTimeHeatmap(acceptedSubs) {
+  // By hour of day (0–23)
+  const hourCounts = Array(24).fill(0);
+  // By day of week (0=Sun) × hour
+  const dayHourCounts = Array.from({ length: 7 }, () => Array(24).fill(0));
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  for (const s of acceptedSubs) {
+    const d = new Date(s.creationTimeSeconds * 1000);
+    const h = d.getHours();
+    const dow = d.getDay();
+    hourCounts[h]++;
+    dayHourCounts[dow][h]++;
+  }
+
+  const maxHour = Math.max(...hourCounts, 1);
+  const maxDayHour = Math.max(...dayHourCounts.flat(), 1);
+
+  // Hour grid
+  const hourGrid = document.getElementById('hourGrid');
+  const hourLabels = document.getElementById('hourLabels');
+  hourGrid.innerHTML = '';
+  hourLabels.innerHTML = '';
+
+  for (let h = 0; h < 24; h++) {
+    const count = hourCounts[h];
+    const intensity = count / maxHour;
+    const cell = document.createElement('div');
+    cell.className = 'hour-cell';
+    cell.style.background = intensityToColor(intensity);
+    cell.title = `${h}:00 — ${count} solves`;
+    hourGrid.appendChild(cell);
+
+    const lbl = document.createElement('span');
+    lbl.textContent = h % 3 === 0 ? `${h}h` : '';
+    hourLabels.appendChild(lbl);
+  }
+
+  // Day × Hour grid
+  const dayHourGrid = document.getElementById('dayHourGrid');
+  dayHourGrid.innerHTML = '';
+
+  for (let dow = 0; dow < 7; dow++) {
+    const row = document.createElement('div');
+    row.className = 'day-heatmap-row';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'day-label';
+    lbl.textContent = dayNames[dow];
+    row.appendChild(lbl);
+
+    const cells = document.createElement('div');
+    cells.className = 'day-cells';
+
+    for (let h = 0; h < 24; h++) {
+      const count = dayHourCounts[dow][h];
+      const intensity = count / maxDayHour;
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      cell.style.background = intensityToColor(intensity);
+      cell.title = `${dayNames[dow]} ${h}:00 — ${count} solves`;
+      cells.appendChild(cell);
+    }
+
+    row.appendChild(cells);
+    dayHourGrid.appendChild(row);
+  }
+}
+
+function intensityToColor(t) {
+  // GitHub-style green ramp
+  if (t === 0) return '#ebedf0';
+  if (t < 0.25) return '#9be9a8';
+  if (t < 0.5)  return '#40c463';
+  if (t < 0.75) return '#30a14e';
+  return '#216e39';
+}
+
+// ── Helpers ────────────────────────────────────────────────
 function computeTopics(submissions) {
   const counts = {};
   for (const s of submissions) {
@@ -120,49 +332,40 @@ function computeTopics(submissions) {
   return counts;
 }
 
-// --- Renderers ---
-
 function getRatingColor(rating) {
-  if (!rating) return '#8b8b9b'; // unrated
-  if (rating < 1200) return '#cccccc'; // gray
-  if (rating < 1400) return '#77ff77'; // green
-  if (rating < 1600) return '#77ddbb'; // cyan
-  if (rating < 1900) return '#aaaaff'; // blue
-  if (rating < 2100) return '#ff88ff'; // purple
-  if (rating < 2300) return '#ffcc88'; // orange
-  if (rating < 2400) return '#ffbb55'; // orange
-  if (rating < 2600) return '#ff7777'; // red
-  if (rating < 3000) return '#ff3333'; // red
-  return '#aa0000'; // legend
+  if (!rating) return '#8b8b9b';
+  if (rating < 1200) return '#808080';
+  if (rating < 1400) return '#008000';
+  if (rating < 1600) return '#03a89e';
+  if (rating < 1900) return '#0000ff';
+  if (rating < 2100) return '#aa00aa';
+  if (rating < 2300) return '#ff8c00';
+  if (rating < 2400) return '#ff8c00';
+  if (rating < 2600) return '#ff0000';
+  if (rating < 3000) return '#ff0000';
+  return '#aa0000';
 }
 
 function renderList(containerId, dataMap, total) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
-  
   const sorted = Object.entries(dataMap).sort((a, b) => b[1] - a[1]);
-  
   for (const [name, count] of sorted) {
     const pct = Math.round((count / total) * 100);
-
     const item = document.createElement('div');
     item.className = 'list-item';
-
     const nameEl = document.createElement('div');
     nameEl.className = 'item-name';
-    nameEl.textContent = name; // textContent — safe against XSS
-
+    nameEl.textContent = name;
     const barContainer = document.createElement('div');
     barContainer.className = 'item-bar-container';
     const bar = document.createElement('div');
     bar.className = 'item-bar';
     bar.style.width = `${pct}%`;
     barContainer.appendChild(bar);
-
     const countEl = document.createElement('div');
     countEl.className = 'item-count';
     countEl.textContent = String(count);
-
     item.appendChild(nameEl);
     item.appendChild(barContainer);
     item.appendChild(countEl);
@@ -173,46 +376,25 @@ function renderList(containerId, dataMap, total) {
 function renderRatingChart(history) {
   const ctx = document.getElementById('ratingChart').getContext('2d');
   if (ratingChartInstance) ratingChartInstance.destroy();
-  
   if (!history || history.length === 0) return;
-
-  const data = history.map(h => ({
-    x: h.ratingUpdateTimeSeconds * 1000,
-    y: h.newRating
-  }));
-
+  const data = history.map(h => ({ x: h.ratingUpdateTimeSeconds * 1000, y: h.newRating }));
   ratingChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       datasets: [{
         label: 'Rating',
-        data: data,
+        data,
         borderColor: '#00d4aa',
-        backgroundColor: 'rgba(0, 212, 170, 0.1)',
-        fill: true,
-        borderWidth: 2,
-        tension: 0.1,
-        pointRadius: 2,
-        pointHoverRadius: 5
+        backgroundColor: 'rgba(0,212,170,0.1)',
+        fill: true, borderWidth: 2, tension: 0.1, pointRadius: 2, pointHoverRadius: 5
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
-      },
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
       scales: {
-        x: {
-          type: 'time',
-          time: { unit: 'month' },
-          grid: { color: '#cccccc' },
-          ticks: { color: '#000000' }
-        },
-        y: {
-          grid: { color: '#cccccc' },
-          ticks: { color: '#000000', stepSize: 1 }
-        }
+        x: { type: 'time', time: { unit: 'month' }, grid: { color: '#cccccc' }, ticks: { color: '#000000' } },
+        y: { grid: { color: '#cccccc' }, ticks: { color: '#000000', stepSize: 1 } }
       }
     }
   });
@@ -221,37 +403,23 @@ function renderRatingChart(history) {
 function renderDifficultyChartFromHist(hist) {
   const ctx = document.getElementById('difficultyChart').getContext('2d');
   if (diffChartInstance) diffChartInstance.destroy();
-
-  const sortedKeys = Object.keys(hist).sort((a,b) => {
+  const sortedKeys = Object.keys(hist).sort((a, b) => {
     if (a === "Unrated") return -1;
     if (b === "Unrated") return 1;
     return parseInt(a) - parseInt(b);
   });
-  
   diffChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: sortedKeys,
-      datasets: [{
-        label: 'Solved',
-        data: sortedKeys.map(k => hist[k]),
-        backgroundColor: '#ff6b35',
-        borderRadius: 4
-      }]
+      datasets: [{ label: 'Solved', data: sortedKeys.map(k => hist[k]), backgroundColor: '#ff6b35', borderRadius: 4 }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: '#000000' }
-        },
-        y: {
-          grid: { color: '#cccccc' },
-          ticks: { color: '#000000', stepSize: 1 }
-        }
+        x: { grid: { display: false }, ticks: { color: '#000000' } },
+        y: { grid: { color: '#cccccc' }, ticks: { color: '#000000', stepSize: 1 } }
       }
     }
   });
