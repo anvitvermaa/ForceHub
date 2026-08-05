@@ -3,7 +3,7 @@
   
   <h1>ForceHub</h1>
   
-  <p><b>The ONLY Chrome extension that backfills ALL your past Codeforces solutions to GitHub!</b></p>
+  <h3><b>The ONLY Chrome extension that backfills ALL your past Codeforces solutions to GitHub!</b></h3>
   
   [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue?logo=googlechrome)](https://github.com/anvitvermaa/ForceHub)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -22,14 +22,14 @@
 
 <hr>
 
-## Features
+## ✨ Features
 
-- **Historical Backfill (Exclusive)** — Push ALL your past Accepted solutions in one click. No other tool does this.
-- **Real-Time Sync** — Every new AC is committed to your GitHub repo instantly and automatically.
-- **Analytics Dashboard** — Built-in dashboard to track your solve streaks, rating changes, language breakdown, and a GitHub-style solve heatmap.
-- **100% Secure & Private** — All credentials (API keys & tokens) are stored locally on your device.
+- 🔙 **Historical Backfill (Exclusive)** — Push ALL your past Accepted solutions in one click. No other tool does this.
+- ⚡ **Real-Time Sync** — Every new AC is committed to your GitHub repo instantly and automatically.
+- 📊 **Analytics Dashboard** — Built-in dashboard to track your solve streaks, rating changes, language breakdown, and a GitHub-style solve heatmap.
+- 🔒 **100% Secure & Private** — All credentials (API keys & tokens) are stored locally on your device.
 
-## Installation
+## 🚀 Installation
 
 1. Clone this repository to your local machine:
    ```bash
@@ -40,19 +40,19 @@
 4. Click **Load unpacked** and select the `extension/` folder from the cloned repo.
 5. Click the ForceHub icon in your extensions tray and follow the setup wizard.
 
-## Setup Requirements
+## ⚙️ Setup Requirements
 
 To link your accounts securely, you'll need:
 - **Codeforces API Key & Secret**: [Generate here](https://codeforces.com/settings/api)
 - **GitHub Personal Access Token (Classic)**: [Generate here](https://github.com/settings/tokens) (Must have the `repo` scope enabled)
 - Your GitHub username and the name of the repository where you want to store your solutions.
 
-## Author
+## 👨‍💻 Author
 
 **Anvit Verma**  
-- [LinkedIn](https://www.linkedin.com/in/anvit-verma/)
-- [Email](mailto:anvitvermaa@gmail.com)
-- [GitHub](https://github.com/anvitvermaa)
+- 💼 [LinkedIn](https://www.linkedin.com/in/anvit-verma/)
+- 📧 [Email](mailto:anvitvermaa@gmail.com)
+- 🐙 [GitHub](https://github.com/anvitvermaa)
 
 ---
 Found a bug or have a feature request? [Open an issue](https://github.com/anvitvermaa/ForceHub/issues)!
