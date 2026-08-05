@@ -67,6 +67,13 @@ function openOptions() {
 openSetupBtn.addEventListener("click", openOptions);
 settingsBtn.addEventListener("click",  openOptions);
 
+const openDashboardBtn = $("openDashboardBtn");
+if (openDashboardBtn) {
+  openDashboardBtn.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/dashboard.html") });
+  });
+}
+
 // ── manual sync ───────────────────────────────────────────────────────────
 
 manualSyncBtn.addEventListener("click", async () => {
@@ -77,6 +84,12 @@ manualSyncBtn.addEventListener("click", async () => {
   chrome.runtime.sendMessage({ type: "FORCEHUB_MANUAL_SYNC" }, async (response) => {
     manualSyncBtn.disabled = false;
     manualSyncBtn.textContent = "Sync now";
+
+    // Handle the case where the service worker was unreachable
+    if (chrome.runtime.lastError) {
+      statusText.textContent = "Sync failed — background worker unavailable, please try again.";
+      return;
+    }
 
     if (response?.ok) {
       const { pushedCount = 0, pendingCount = 0 } = response.result || {};
@@ -102,8 +115,9 @@ async function renderDashboard(handle) {
       getUserSubmissions(handle, 200),
       getUserInfo(handle),
     ]);
-  } catch {
-    statusText.textContent = "Could not reach Codeforces — will retry automatically.";
+  } catch (err) {
+    statusText.textContent = `CF unreachable: ${err.message}`;
+    console.error("[ForceHub] renderDashboard error:", err);
   }
 
   const accepted      = submissions.filter(s => s.verdict === "OK");

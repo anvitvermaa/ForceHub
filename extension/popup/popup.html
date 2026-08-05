@@ -53,6 +53,10 @@
         </div>
       </div>
 
+      <div class="panel" style="margin-bottom: 12px; padding: 12px; display: flex; justify-content: center;">
+        <button id="openDashboardBtn" class="btn btn-primary" style="width: 100%; display: block; text-align: center;">View Full Analytics Dashboard →</button>
+      </div>
+
       <div class="panel">
         <div class="panel-title">Rating distribution</div>
         <div id="ratingHistogram" class="histogram"></div>
@@ -77,8 +81,38 @@
       </div>
 
     </section>
+    <!-- MASCOT & FOOTER -->
+    <div style="padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #e0e0c0; border-bottom: 2px groove #808080; border-top: 2px groove #808080;">
+      <img src="../icons/icon48.png" alt="ForceHub Mascot" style="width: 36px; height: 36px; flex-shrink: 0; animation: floatMascot 4s ease-in-out infinite;">
+      <div style="position:relative; width:190px; height:170px;">
+        <svg viewBox="0 0 230 210" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(3px 3px 0 #1a1a1a);">
+          <path d="M115,5 L127,44 L158,22 L148,62 L184,46 L164,76 L205,80 L174,100 L210,120 L174,126 L200,155 L163,148 L170,184 L137,164 L128,202 L110,170 L88,202 L78,165 L44,182 L52,148 L16,158 L40,126 L5,118 L40,100 L14,76 L52,72 L36,40 L70,58 L64,18 L100,44 Z" fill="white" stroke="#1a1a1a" stroke-width="5" stroke-linejoin="round"/>
+        </svg>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);text-align:center;width:135px;font-family:Georgia,'Times New Roman',serif;font-size:13px;font-weight:bold;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.5px;line-height:1.5;">
+          REAL-TIME SYNC<br>+ BACKFILL!<br><span style="font-size:10px;font-weight:normal;text-transform:none;font-style:italic;">Only ext. that does both</span>
+        </div>
+      </div>
+    </div>
 
-    <footer class="footer">ForceHub — open source</footer>
+    <footer class="footer" style="padding: 12px 16px; background: #e0e0c0;">
+      <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 12px;">
+        <a href="https://github.com/anvitvermaa" target="_blank" style="color: #008000; text-decoration: none;" title="GitHub">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anvit-verma/" target="_blank" style="color: #0077b5; text-decoration: none;" title="LinkedIn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M14.82 0H1.18A1.17 1.17 0 000 1.15v13.7A1.17 1.17 0 001.18 16h13.64A1.18 1.18 0 0016 14.85V1.15A1.18 1.18 0 0014.82 0zM4.74 13.68H2.37V6.04h2.37v7.64zM3.56 5.04a1.37 1.37 0 11.02-2.73 1.37 1.37 0 01-.02 2.73zM13.63 13.68h-2.36V9.95c0-.89-.02-2.03-1.24-2.03-1.24 0-1.43.97-1.43 1.96v3.8H6.24V6.04h2.27v1.04h.03c.31-.6 1.08-1.23 2.23-1.23 2.39 0 2.83 1.57 2.83 3.61v4.22z"></path></svg>
+        </a>
+        <a href="mailto:anvitvermaa@gmail.com" style="color: #d44638; text-decoration: none;" title="Email">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 3A1.5 1.5 0 000 4.5v7A1.5 1.5 0 001.5 13h13a1.5 1.5 0 001.5-1.5v-7A1.5 1.5 0 0014.5 3h-13zm12.35 1.5L8 8.16 2.15 4.5h11.7zM1.5 5.51l6.19 3.86a.5.5 0 00.62 0l6.19-3.86v5.99H1.5V5.51z"></path></svg>
+        </a>
+      </div>
+      
+      <div style="background: #f0f0f0; border: 2px inset #ffffff; padding: 8px; text-align: left;">
+        <span style="color: #000; font-weight: bold; font-size: 11px;">Report an issue</span>
+        <textarea id="issueTextPopup" placeholder="What's broken?" style="width: 100%; height: 40px; margin-top: 4px; padding: 2px; font-family: inherit; font-size: 10px; border: 1px inset #888;"></textarea>
+        <button class="btn" style="margin-top: 4px; padding: 2px 6px; font-size: 10px; width: 100%; background: #d4d0c8; border: 2px outset #fff; color: #000; cursor: pointer;" onclick="window.open('https://github.com/anvitvermaa/ForceHub/issues/new?title=Bug+Report&body=' + encodeURIComponent(document.getElementById('issueTextPopup').value))">Submit</button>
+      </div>
+    </footer>
   </div>
 
   <script type="module" src="popup.js"></script>

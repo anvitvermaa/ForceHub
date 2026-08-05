@@ -7,10 +7,12 @@ import { getUserSubmissions, getSubmissionSource, getContestPhase, CodeforcesErr
 import { upsertFile, GitHubError } from "./github.js";
 import { getStoredGitHubToken, getCfCredentials, getSettings } from "./auth.js";
 import { extensionForLanguage } from "./config.js";
+import { trackUserSync } from "./db.js";
 
 const SYNC_STATE_KEY = "fh_sync_state";
 const PENDING_QUEUE_KEY = "fh_pending_queue";
 const SYNC_LOG_KEY = "fh_sync_log";
+const MAX_PENDING_RETRIES = 10; // drop a stuck submission after this many failures
 
 async function getSyncState() {
   const { [SYNC_STATE_KEY]: state } = await chrome.storage.local.get(SYNC_STATE_KEY);
@@ -95,8 +97,19 @@ export async function runSync() {
     if (result.status === "pushed") {
       pushedCount++;
       state.lastSyncedSubmissionId = Math.max(state.lastSyncedSubmissionId, sub.id);
+      
+      // Delay 1000ms between successful pushes to respect GitHub secondary rate limits
+      await new Promise(r => setTimeout(r, 1000));
     } else if (result.status === "pending_contest" || result.status === "error") {
-      stillPending.push(sub);
+      const retries = (sub._retries || 0) + 1;
+      if (retries < MAX_PENDING_RETRIES) {
+        stillPending.push({ ...sub, _retries: retries });
+      } else {
+        await appendSyncLog({
+          level: "warning",
+          message: `Giving up on ${sub.problem?.name || sub.id} after ${retries} failed attempts`,
+        });
+      }
     }
   }
 
@@ -106,6 +119,9 @@ export async function runSync() {
   if (pushedCount > 0) {
     await regenerateReadme(token, owner, repo, settings, accepted);
   }
+
+  // Analytics: Track active users in Firebase Firestore using the REST API
+  await trackUserSync(handle, settings.repoFullName, accepted.length);
 
   return { pushedCount, pendingCount: stillPending.length };
 }
@@ -123,7 +139,7 @@ async function tryPushSubmission(submission, token, owner, repo, settings) {
     const path = buildPath(submission, settings.organizeBy);
     const commitMessage = `Solved: ${submission.problem.name} (${submission.problem.contestId || ""}${submission.problem.index || ""})`;
 
-    await upsertFile(token, owner, repo, path, source, commitMessage, settings.defaultBranch || "main");
+    await upsertFile(token, owner, repo, path, source, commitMessage, settings.defaultBranch || "main", submission.creationTimeSeconds);
     await appendSyncLog({ level: "success", message: `Pushed ${submission.problem.name} → ${path}` });
     return { status: "pushed" };
   } catch (err) {

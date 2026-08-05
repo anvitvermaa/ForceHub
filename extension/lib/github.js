@@ -64,26 +64,66 @@ export async function createRepo(token, name, isPrivate = false) {
   });
 }
 
-export async function upsertFile(token, owner, repo, path, content, message, branch) {
-  let sha;
-  try {
-    const existing = await ghFetch(
-      `/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${branch}`,
-      token
-    );
-    sha = existing.sha;
-  } catch (err) {
-    if (err.status !== 404) throw err;
-  }
+export async function upsertFile(token, owner, repo, path, content, message, branch, solveDate) {
+  const dateStr = solveDate
+    ? new Date(solveDate * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+    : new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 
-  return ghFetch(`/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, token, {
-    method: "PUT",
+  const committer = { name: "ForceHub", email: "forcehub@users.noreply.github.com", date: dateStr };
+
+  // 1. Get current branch reference
+  const ref = await ghFetch(`/repos/${owner}/${repo}/git/refs/heads/${branch}`, token);
+  const latestCommitSha = ref.object.sha;
+
+  // 2. Get latest commit to find base tree
+  const latestCommit = await ghFetch(`/repos/${owner}/${repo}/git/commits/${latestCommitSha}`, token);
+  const baseTreeSha = latestCommit.tree.sha;
+
+  // 3. Create blob for file content
+  const blob = await ghFetch(`/repos/${owner}/${repo}/git/blobs`, token, {
+    method: "POST",
+    body: JSON.stringify({
+      content: utf8ToBase64(content),
+      encoding: "base64"
+    })
+  });
+
+  // 4. Create new tree pointing to the blob (replaces file if exists)
+  // Note: Tree API expects raw path, not url-encoded
+  const newTree = await ghFetch(`/repos/${owner}/${repo}/git/trees`, token, {
+    method: "POST",
+    body: JSON.stringify({
+      base_tree: baseTreeSha,
+      tree: [
+        {
+          path: path,
+          mode: "100644",
+          type: "blob",
+          sha: blob.sha
+        }
+      ]
+    })
+  });
+
+  // 5. Create new commit with backdated timestamps
+  const newCommit = await ghFetch(`/repos/${owner}/${repo}/git/commits`, token, {
+    method: "POST",
     body: JSON.stringify({
       message,
-      content: utf8ToBase64(content),
-      branch,
-      ...(sha ? { sha } : {}),
-    }),
+      author: committer,
+      committer: committer,
+      parents: [latestCommitSha],
+      tree: newTree.sha
+    })
+  });
+
+  // 6. Update branch pointer
+  return ghFetch(`/repos/${owner}/${repo}/git/refs/heads/${branch}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({
+      sha: newCommit.sha,
+      force: false
+    })
   });
 }
 

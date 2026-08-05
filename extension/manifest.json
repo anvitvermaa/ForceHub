@@ -9,12 +9,12 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
-    }
+    },
+    "default_title": "ForceHub"
   },
   "options_ui": {
     "page": "options/options.html",
@@ -27,14 +27,24 @@
   "permissions": [
     "storage",
     "alarms",
-    "identity"
+    "identity",
+    "scripting",
+    "tabs"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://codeforces.com/*"],
+      "js": ["lib/content.js"],
+      "run_at": "document_idle"
+    }
   ],
   "host_permissions": [
     "https://codeforces.com/*",
-    "https://api.github.com/*"
+    "https://api.github.com/*",
+    "https://firestore.googleapis.com/*"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://codeforces.com https://api.github.com https://*.workers.dev; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://codeforces.com https://api.github.com https://firestore.googleapis.com https://*.workers.dev; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;"
   },
   "minimum_chrome_version": "110"
 }

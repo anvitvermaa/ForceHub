@@ -209,8 +209,10 @@ cfVerifyBtn.addEventListener("click", async () => {
     cfHandle.classList.add("error");
     if (err instanceof CodeforcesError && err.code === "CF_AUTH_FAILED") {
       setStatus(cfStatus, "error", "Key/secret don't match this handle. Re-check codeforces.com/settings/api — they must be generated under the same account.");
-    } else if (err instanceof CodeforcesError) {
+    } else if (err instanceof CodeforcesError && err.code === "CF_FAILED") {
       setStatus(cfStatus, "error", `Handle not found: "${handle}". Double-check the spelling.`);
+    } else if (err instanceof CodeforcesError) {
+      setStatus(cfStatus, "error", `Codeforces API error (${err.code || 'unknown'}) — the server may be busy, please try again.`);
     } else {
       setStatus(cfStatus, "error", "Network error — check your connection and try again.");
     }
@@ -412,11 +414,15 @@ settingsChangeRepo.addEventListener("click", async () => {
 settingsBackfill.addEventListener("click", async () => {
   const ok = confirm("This will push every past Accepted solution not yet synced. It may take a while for large histories. Continue?");
   if (!ok) return;
-  await updateSettings({ backfillEnabled: true });
+  // Trigger a manual sync — sync.js will pick up all unsynced submissions
   settingsBackfill.disabled = true;
   settingsBackfill.textContent = "Backfill triggered — check the popup sync log…";
   chrome.runtime.sendMessage({ type: "FORCEHUB_MANUAL_SYNC" }, (response) => {
-    settingsBackfill.textContent = response?.ok ? "✓ Backfill complete" : "Backfill failed — check sync log";
+    if (chrome.runtime.lastError) {
+      settingsBackfill.textContent = "Backfill failed — background worker unavailable";
+    } else {
+      settingsBackfill.textContent = response?.ok ? "✓ Backfill complete" : "Backfill failed — check sync log";
+    }
     settingsBackfill.disabled = false;
   });
 });
