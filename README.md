@@ -31,14 +31,9 @@
 
 ## 🚀 Installation
 
-1. Clone this repository to your local machine:
-   ```bash
-   git clone https://github.com/anvitvermaa/ForceHub.git
-   ```
-2. Open Chrome and navigate to `chrome://extensions`.
-3. Enable **Developer Mode** (toggle in the top right).
-4. Click **Load unpacked** and select the `extension/` folder from the cloned repo.
-5. Click the ForceHub icon in your extensions tray and follow the setup wizard.
+1. [**Add ForceHub to Chrome**](#) *(Web Store link coming soon!)*
+2. Click the ForceHub icon in your extensions tray.
+3. Follow the quick setup wizard to link your Codeforces and GitHub accounts.
 
 ## ⚙️ Setup Requirements
 
