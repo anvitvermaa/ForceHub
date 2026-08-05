@@ -31,15 +31,9 @@
 
 ## 🚀 Installation
 
-> **Chrome Web Store listing coming soon!**
-
-For now, install directly from GitHub:
-
-1. Head to the [Releases](https://github.com/anvitvermaa/ForceHub/releases) page and download the latest release.
-2. Open Chrome and go to `chrome://extensions`.
-3. Enable **Developer Mode** (toggle in the top right).
-4. Click **Load unpacked** and select the downloaded folder.
-5. Pin ForceHub from your extensions tray and you're good to go.
+1. Install ForceHub from the [Chrome Web Store](#) *(link coming soon)*.
+2. Click the ForceHub icon in your Chrome toolbar.
+3. Follow the one-time setup to link your Codeforces and GitHub accounts.
 
 ## ⚙️ Setup Requirements
 
