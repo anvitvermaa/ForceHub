@@ -30,7 +30,7 @@ html {
 body {
   color: var(--text);
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 16px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -54,7 +54,7 @@ body {
 .header { display: flex; align-items: baseline; gap: 10px; padding-bottom: 8px; border-bottom: 2px groove var(--border); }
 .brand-mark { display: none; }
 .brand-name {
-  font-size: 20px; font-weight: bold; font-family: Arial, "MS Sans Serif", sans-serif;
+  font-size: 24px; font-weight: bold; font-family: Arial, "MS Sans Serif", sans-serif;
   color: #000080; letter-spacing: 3px; text-transform: uppercase;
   padding: 2px 8px; background: #d4d0c8;
   border-top: 2px solid #fff; border-left: 2px solid #fff;
@@ -364,8 +364,8 @@ body {
       </div>
 
       <div class="settings-group" style="background: #ffffe0; border: 2px inset #ff8c00; padding: 12px;">
-        <div class="settings-group-label" style="color: #ff8c00; font-weight: bold; font-size: 14px;">EXCLUSIVE: Backfill old solves</div>
-        <div class="card-desc" style="margin-bottom:8px; color: #000;">Push every past Accepted solution that hasn't been synced yet. <strong>No other extension does this!</strong> One-time — won't duplicate anything already pushed.</div>
+        <div class="settings-group-label" style="color: #ff8c00; font-weight: bold; font-size: 14px;">Backfill past solves</div>
+        <div class="card-desc" style="margin-bottom:8px; color: #000;">Push every past Accepted solution that hasn't been synced yet. One-time — won't duplicate anything already pushed.</div>
         <button id="settingsBackfill" class="btn btn-primary" style="background: #ff8c00; color: #000; border-color: #fff;">Backfill past solutions</button>
       </div>
     </div>
