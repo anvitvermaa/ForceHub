@@ -31,11 +31,15 @@
 
 ## 🚀 Installation
 
-1. Download the `forcehub-v1.0.0.zip` file from this repository and extract it.
-2. Open Chrome and navigate to `chrome://extensions`.
+> **Chrome Web Store listing coming soon!**
+
+For now, install directly from GitHub:
+
+1. Head to the [Releases](https://github.com/anvitvermaa/ForceHub/releases) page and download the latest release.
+2. Open Chrome and go to `chrome://extensions`.
 3. Enable **Developer Mode** (toggle in the top right).
-4. Click **Load unpacked** and select the extracted folder.
-5. Click the ForceHub icon in your extensions tray and follow the setup wizard.
+4. Click **Load unpacked** and select the downloaded folder.
+5. Pin ForceHub from your extensions tray and you're good to go.
 
 ## ⚙️ Setup Requirements
 
