@@ -70,6 +70,7 @@ async function loadUserDashboard(handle, apiKey, apiSecret) {
   }
 }
 
+function renderDashboard(user, submissions, ratingHistory) {
   // 1. Basic Info
   document.getElementById('userHandle').textContent = user.handle;
 
