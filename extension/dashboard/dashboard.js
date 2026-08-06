@@ -70,14 +70,41 @@ async function loadUserDashboard(handle, apiKey, apiSecret) {
   }
 }
 
-function renderDashboard(user, submissions, ratingHistory) {
   // 1. Basic Info
   document.getElementById('userHandle').textContent = user.handle;
-  document.getElementById('userAvatar').src = user.titlePhoto || user.avatar || '';
-  document.getElementById('userRank').textContent = user.rank || "Unrated";
-  document.getElementById('userRating').textContent = user.rating ? `Rating: ${user.rating}` : "Unrated";
-  document.getElementById('userMaxRating').textContent = user.maxRating ? `Max: ${user.maxRating}` : "";
-  document.getElementById('userRank').style.color = getRatingColor(user.rating);
+
+  // Fix protocol-relative avatar URLs (CF sometimes returns //userpic.codeforces.org/...)
+  const rawAvatar = user.titlePhoto || user.avatar || '';
+  const avatarEl = document.getElementById('userAvatar');
+  avatarEl.src = rawAvatar.startsWith('//') ? 'https:' + rawAvatar : rawAvatar;
+  avatarEl.onerror = () => { avatarEl.style.display = 'none'; };
+
+  // Rank badge — only show if rated
+  const rankEl = document.getElementById('userRank');
+  if (user.rank) {
+    rankEl.textContent = user.rank;
+    rankEl.style.display = '';
+  } else {
+    rankEl.textContent = 'Unrated';
+    rankEl.style.display = '';
+  }
+  rankEl.style.color = getRatingColor(user.rating);
+
+  // Rating & Max Rating — hide entirely if unrated to avoid double "Unrated"
+  const ratingEl    = document.getElementById('userRating');
+  const maxRatingEl = document.getElementById('userMaxRating');
+  if (user.rating) {
+    ratingEl.textContent    = `Rating: ${user.rating}`;
+    ratingEl.style.display  = '';
+  } else {
+    ratingEl.style.display  = 'none';
+  }
+  if (user.maxRating) {
+    maxRatingEl.textContent   = `Max: ${user.maxRating}`;
+    maxRatingEl.style.display = '';
+  } else {
+    maxRatingEl.style.display = 'none';
+  }
 
   // 2. Filter & dedupe
   const allAccepted = submissions.filter(s => s.verdict === 'OK');
