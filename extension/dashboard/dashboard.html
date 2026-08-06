@@ -166,6 +166,7 @@
         <button class="tab-btn" data-tab="timeheat">Time Heatmap</button>
         <button class="tab-btn" data-tab="topics">Topics &amp; Languages</button>
         <button class="tab-btn" data-tab="compare">⚔️ Compare</button>
+        <button class="tab-btn" data-tab="mastery">🏆 Mastery</button>
       </div>
 
       <!-- TAB: Overview -->
@@ -375,6 +376,27 @@
             </div>
 
           </div><!-- /cmpResults -->
+        </section>
+      </div>
+
+      <!-- TAB: Mastery -->
+      <div class="tab-panel" id="tab-mastery">
+        <section class="card" style="padding:1.5rem;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+            <div>
+              <h2 style="margin-bottom:4px;">Tag Mastery Tree</h2>
+              <p style="color:#555; font-size:13px;">Skill level per topic based on problems solved &amp; difficulty. Higher rated problems count more toward mastery.</p>
+            </div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:12px; font-weight:600;">
+              <span style="background:#e8f5e9; border:1px solid #2e7d32; color:#1b5e20; padding:3px 10px; border-radius:12px;">&#127807; Beginner</span>
+              <span style="background:#e3f2fd; border:1px solid #1565c0; color:#0d47a1; padding:3px 10px; border-radius:12px;">&#9889; Intermediate</span>
+              <span style="background:#f3e5f5; border:1px solid #6a1b9a; color:#4a148c; padding:3px 10px; border-radius:12px;">&#128293; Expert</span>
+              <span style="background:#fff8e1; border:1px solid #f57f17; color:#e65100; padding:3px 10px; border-radius:12px;">&#128081; Master</span>
+            </div>
+          </div>
+
+          <!-- Tier sections rendered by JS -->
+          <div id="masteryTree"></div>
         </section>
       </div>
 

@@ -148,6 +148,9 @@ function renderDashboard(user, submissions, ratingHistory) {
   // 9. Time Heatmap Tab
   renderTimeHeatmap(allAccepted);
 
+  // 10. Mastery Tree Tab
+  renderMasteryTree(uniqueAccepted);
+
   // Store for Compare tab
   myProcessedData = { user, uniqueAccepted, allAccepted, ratingHistory };
 }
@@ -459,6 +462,202 @@ function renderDifficultyChartFromHist(hist) {
       }
     }
   });
+}
+
+// ── Mastery Tree ──────────────────────────────────────────
+
+const MASTERY_TIERS = [
+  {
+    id: 'master',
+    label: '\ud83d\udc51 Master',
+    emoji: '\ud83d\udc51',
+    name: 'Master',
+    bg: '#fff8e1',
+    border: '#f57f17',
+    headerBg: 'linear-gradient(135deg,#f57f17,#e65100)',
+    headerColor: '#fff',
+    barColor: '#f57f17',
+    tagBg: '#fff3e0',
+    tagBorder: '#f57f17',
+    tagColor: '#bf360c',
+    minScore: 120
+  },
+  {
+    id: 'expert',
+    label: '\ud83d\udd25 Expert',
+    emoji: '\ud83d\udd25',
+    name: 'Expert',
+    bg: '#f3e5f5',
+    border: '#7b1fa2',
+    headerBg: 'linear-gradient(135deg,#7b1fa2,#4a148c)',
+    headerColor: '#fff',
+    barColor: '#ab47bc',
+    tagBg: '#fce4ec',
+    tagBorder: '#880e4f',
+    tagColor: '#4a148c',
+    minScore: 60
+  },
+  {
+    id: 'intermediate',
+    label: '\u26a1 Intermediate',
+    emoji: '\u26a1',
+    name: 'Intermediate',
+    bg: '#e3f2fd',
+    border: '#1565c0',
+    headerBg: 'linear-gradient(135deg,#1565c0,#0d47a1)',
+    headerColor: '#fff',
+    barColor: '#1976d2',
+    tagBg: '#e8eaf6',
+    tagBorder: '#1565c0',
+    tagColor: '#1a237e',
+    minScore: 25
+  },
+  {
+    id: 'beginner',
+    label: '\ud83c\udf31 Beginner',
+    emoji: '\ud83c\udf31',
+    name: 'Beginner',
+    bg: '#e8f5e9',
+    border: '#2e7d32',
+    headerBg: 'linear-gradient(135deg,#388e3c,#1b5e20)',
+    headerColor: '#fff',
+    barColor: '#43a047',
+    tagBg: '#f1f8e9',
+    tagBorder: '#558b2f',
+    tagColor: '#1b5e20',
+    minScore: 0
+  }
+];
+
+function computeTagMastery(submissions) {
+  const tagData = {};
+  for (const s of submissions) {
+    for (const tag of (s.problem.tags || [])) {
+      if (!tagData[tag]) tagData[tag] = { count: 0, ratingSum: 0, maxRating: 0, ratedCount: 0 };
+      const r = s.problem.rating || 0;
+      tagData[tag].count++;
+      if (r) { tagData[tag].ratingSum += r; tagData[tag].ratedCount++; tagData[tag].maxRating = Math.max(tagData[tag].maxRating, r); }
+    }
+  }
+
+  return Object.entries(tagData).map(([tag, d]) => {
+    const avgRating = d.ratedCount ? Math.round(d.ratingSum / d.ratedCount) : 0;
+    // Score: each problem = 5pts base + (rating/100) bonus + (maxRating/200) bonus
+    const score = d.count * 5 + (avgRating / 100) + (d.maxRating / 200);
+
+    let tier;
+    if      (score >= 120) tier = MASTERY_TIERS[0]; // master
+    else if (score >= 60)  tier = MASTERY_TIERS[1]; // expert
+    else if (score >= 25)  tier = MASTERY_TIERS[2]; // intermediate
+    else                   tier = MASTERY_TIERS[3]; // beginner
+
+    // Progress within current tier
+    const nextMinScore = MASTERY_TIERS[MASTERY_TIERS.indexOf(tier) - 1]?.minScore ?? null;
+    const progress = nextMinScore !== null
+      ? Math.min(99, Math.round(((score - tier.minScore) / (nextMinScore - tier.minScore)) * 100))
+      : 100;
+
+    return { tag, count: d.count, avgRating, maxRating: d.maxRating, score, tier, progress };
+  }).sort((a, b) => b.score - a.score);
+}
+
+function renderMasteryTree(submissions) {
+  const container = document.getElementById('masteryTree');
+  container.innerHTML = '';
+
+  const allMastery = computeTagMastery(submissions);
+  if (!allMastery.length) {
+    container.innerHTML = '<p style="color:#888;text-align:center;padding:2rem;">No tag data yet — solve some problems first!</p>';
+    return;
+  }
+
+  // Group by tier
+  const grouped = {};
+  for (const t of MASTERY_TIERS) grouped[t.id] = [];
+  for (const m of allMastery) grouped[m.tier.id].push(m);
+
+  // Render each tier (skip empty tiers)
+  for (let i = 0; i < MASTERY_TIERS.length; i++) {
+    const tier = MASTERY_TIERS[i];
+    const items = grouped[tier.id];
+    if (!items.length) continue;
+
+    // Tier header
+    const section = document.createElement('div');
+    section.style.cssText = 'margin-bottom:2rem; position:relative;';
+
+    // Connector line going down (except last)
+    if (i < MASTERY_TIERS.length - 1 && grouped[MASTERY_TIERS[i + 1].id].length) {
+      const line = document.createElement('div');
+      line.style.cssText = `position:absolute; left:24px; bottom:-2rem; width:3px; height:2rem;
+        background:linear-gradient(${tier.border},${MASTERY_TIERS[i+1]?.border ?? '#ccc'}); z-index:1;`;
+      section.appendChild(line);
+    }
+
+    const header = document.createElement('div');
+    header.style.cssText = `display:inline-flex; align-items:center; gap:10px; padding:8px 20px;
+      background:${tier.headerBg}; color:${tier.headerColor}; border-radius:20px;
+      font-size:15px; font-weight:700; margin-bottom:14px; box-shadow:2px 2px 6px rgba(0,0,0,0.2);`;
+    header.innerHTML = `${tier.label} <span style="font-size:12px;opacity:0.85;font-weight:400;">(${items.length} tag${items.length !== 1 ? 's' : ''})</span>`;
+    section.appendChild(header);
+
+    // Cards grid
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; padding-left:16px;';
+
+    for (const m of items) {
+      const card = document.createElement('div');
+      card.style.cssText = `background:${tier.tagBg}; border:2px solid ${tier.tagBorder};
+        border-radius:8px; padding:14px 16px; position:relative; overflow:hidden;
+        transition:transform 0.15s, box-shadow 0.15s; cursor:default;`;
+      card.addEventListener('mouseenter', () => {
+        card.style.transform = 'translateY(-3px)';
+        card.style.boxShadow = `0 6px 16px rgba(0,0,0,0.15)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+        card.style.boxShadow = '';
+      });
+
+      // Tag name
+      const nameEl = document.createElement('div');
+      nameEl.style.cssText = `font-size:14px; font-weight:700; color:${tier.tagColor}; margin-bottom:8px;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`;
+      nameEl.textContent = m.tag;
+      nameEl.title = m.tag;
+
+      // Stats row
+      const stats = document.createElement('div');
+      stats.style.cssText = 'font-size:11px; color:#666; display:flex; gap:10px; margin-bottom:8px;';
+      stats.innerHTML = `
+        <span title="Problems solved with this tag">&#128218; ${m.count}</span>
+        <span title="Average difficulty">&oslash; ${m.avgRating || '—'}</span>
+        <span title="Hardest problem solved">&#9650; ${m.maxRating || '—'}</span>
+      `;
+
+      // Progress bar
+      const barWrap = document.createElement('div');
+      barWrap.style.cssText = 'height:5px; background:#ddd; border-radius:3px; overflow:hidden;';
+      const barFill = document.createElement('div');
+      barFill.style.cssText = `height:100%; width:${m.progress}%; background:${tier.barColor};
+        border-radius:3px; transition:width 0.6s ease;`;
+      barWrap.appendChild(barFill);
+
+      // Progress label
+      const progLabel = document.createElement('div');
+      progLabel.style.cssText = 'font-size:10px; color:#999; margin-top:4px; text-align:right;';
+      progLabel.textContent = m.progress === 100 ? 'MAX' : `${m.progress}% to next`;
+
+      card.appendChild(nameEl);
+      card.appendChild(stats);
+      card.appendChild(barWrap);
+      card.appendChild(progLabel);
+      grid.appendChild(card);
+    }
+
+    section.appendChild(grid);
+    container.appendChild(section);
+  }
 }
 
 // ── Compare Tab ───────────────────────────────────────────
