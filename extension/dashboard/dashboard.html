@@ -164,7 +164,8 @@
         <button class="tab-btn active" data-tab="overview">Overview</button>
         <button class="tab-btn" data-tab="speed">Solve Speed</button>
         <button class="tab-btn" data-tab="timeheat">Time Heatmap</button>
-        <button class="tab-btn" data-tab="topics">Topics & Languages</button>
+        <button class="tab-btn" data-tab="topics">Topics &amp; Languages</button>
+        <button class="tab-btn" data-tab="compare">⚔️ Compare</button>
       </div>
 
       <!-- TAB: Overview -->
@@ -284,6 +285,96 @@
               <!-- Populated by JS -->
             </div>
           </div>
+        </section>
+      </div>
+
+      <!-- TAB: Peer Comparison -->
+      <div class="tab-panel" id="tab-compare">
+        <section class="card" style="padding: 1.5rem;">
+
+          <!-- Search bar -->
+          <div style="display:flex; gap:10px; align-items:center; margin-bottom:1.5rem;">
+            <input id="peerHandleInput" type="text" placeholder="Enter Codeforces handle (e.g. tourist)"
+              style="flex:1; padding:10px 14px; font-size:15px; font-family:inherit;
+                     border:2px inset #808080; background:#fff; outline:none;"/>
+            <button id="compareBtn"
+              style="padding:10px 24px; font-size:15px; font-weight:700; font-family:inherit;
+                     background:#000080; color:#fff; border:2px outset #aaa; cursor:pointer;
+                     white-space:nowrap;">
+              Compare ⚔️
+            </button>
+          </div>
+
+          <!-- Loading / Error states -->
+          <div id="cmpLoading" style="display:none; text-align:center; padding:2rem; color:#555;">Fetching peer data...</div>
+          <div id="cmpError"   style="display:none; text-align:center; padding:2rem; color:#c00; font-weight:bold;"></div>
+
+          <!-- Results (hidden until comparison runs) -->
+          <div id="cmpResults" style="display:none;">
+
+            <!-- Profile cards + score -->
+            <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:1rem; align-items:center; margin-bottom:1.5rem;">
+
+              <!-- You -->
+              <div id="cmpMyCard" style="text-align:center; padding:1.2rem; background:#e8f0ff;
+                border:2px solid #000080; border-radius:4px;">
+                <img id="cmpMyAvatar" src="" style="width:64px;height:64px;border-radius:8px;border:2px solid #000080;margin-bottom:8px;" />
+                <div id="cmpMyHandle" style="font-size:18px;font-weight:700;color:#000080;"></div>
+                <div id="cmpMyRank"   style="font-size:13px;margin:4px 0;"></div>
+                <div id="cmpMyRating" style="font-size:28px;font-weight:900;"></div>
+                <div style="font-size:11px;color:#555;">Current Rating</div>
+              </div>
+
+              <!-- Score -->
+              <div style="text-align:center; padding:1rem;">
+                <div style="font-size:13px;color:#555;margin-bottom:6px;">You lead</div>
+                <div id="cmpScoreYou" style="font-size:36px;font-weight:900;color:#008000;">0</div>
+                <div style="font-size:13px;color:#555;">out of <span id="cmpScoreTotal">8</span> metrics</div>
+                <div style="width:80px;height:8px;background:#eee;border-radius:4px;margin:8px auto 0;overflow:hidden;">
+                  <div id="cmpScoreBar" style="height:100%;background:#008000;border-radius:4px;width:0%;transition:width 0.5s;"></div>
+                </div>
+              </div>
+
+              <!-- Peer -->
+              <div id="cmpPeerCard" style="text-align:center; padding:1.2rem; background:#fff0f0;
+                border:2px solid #c00; border-radius:4px;">
+                <img id="cmpPeerAvatar" src="" style="width:64px;height:64px;border-radius:8px;border:2px solid #c00;margin-bottom:8px;" />
+                <div id="cmpPeerHandle" style="font-size:18px;font-weight:700;color:#c00;"></div>
+                <div id="cmpPeerRank"   style="font-size:13px;margin:4px 0;"></div>
+                <div id="cmpPeerRating" style="font-size:28px;font-weight:900;"></div>
+                <div style="font-size:11px;color:#555;">Current Rating</div>
+              </div>
+            </div>
+
+            <!-- Metrics table -->
+            <table style="width:100%;border-collapse:collapse;margin-bottom:1.5rem;">
+              <thead>
+                <tr>
+                  <th style="background:#000080;color:#fff;padding:10px 16px;text-align:right;font-size:13px;width:35%;">YOU</th>
+                  <th style="background:#333;color:#fff;padding:10px 16px;text-align:center;font-size:13px;width:30%;">Metric</th>
+                  <th style="background:#a00;color:#fff;padding:10px 16px;text-align:left;font-size:13px;width:35%;">PEER</th>
+                </tr>
+              </thead>
+              <tbody id="cmpTableBody"></tbody>
+            </table>
+
+            <!-- Charts row -->
+            <div class="charts-row">
+              <div class="card chart-card">
+                <h2>Difficulty Distribution</h2>
+                <div class="chart-wrapper">
+                  <canvas id="cmpDiffChart"></canvas>
+                </div>
+              </div>
+              <div class="card chart-card">
+                <h2>Top Topics Overlap</h2>
+                <div class="chart-wrapper">
+                  <canvas id="cmpRadarChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /cmpResults -->
         </section>
       </div>
 

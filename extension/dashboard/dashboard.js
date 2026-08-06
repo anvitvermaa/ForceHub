@@ -12,6 +12,11 @@ const emptyState = document.getElementById('emptyState');
 let ratingChartInstance = null;
 let diffChartInstance = null;
 let speedTrendChartInstance = null;
+let cmpDiffChartInstance = null;
+let cmpRadarChartInstance = null;
+
+// Current user's processed data (used by Compare tab)
+let myProcessedData = null;
 
 // ── Tab Logic ──────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -114,6 +119,9 @@ function renderDashboard(user, submissions, ratingHistory) {
 
   // 9. Time Heatmap Tab
   renderTimeHeatmap(allAccepted);
+
+  // Store for Compare tab
+  myProcessedData = { user, uniqueAccepted, allAccepted, ratingHistory };
 }
 
 // ── Solve Speed ────────────────────────────────────────────
@@ -420,6 +428,220 @@ function renderDifficultyChartFromHist(hist) {
       scales: {
         x: { grid: { display: false }, ticks: { color: '#000000' } },
         y: { grid: { color: '#cccccc' }, ticks: { color: '#000000', stepSize: 1 } }
+      }
+    }
+  });
+}
+
+// ── Compare Tab ───────────────────────────────────────────
+
+// Wire up Compare button
+document.getElementById('compareBtn').addEventListener('click', runComparison);
+document.getElementById('peerHandleInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runComparison();
+});
+
+async function cfFetchPublic(method, params) {
+  const url = new URL(`https://codeforces.com/api/${method}`);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.status !== 'OK') throw new Error(json.comment || 'CF API error');
+  return json.result;
+}
+
+async function runComparison() {
+  const peerHandle = document.getElementById('peerHandleInput').value.trim();
+  if (!peerHandle) return;
+
+  const loading = document.getElementById('cmpLoading');
+  const error   = document.getElementById('cmpError');
+  const results = document.getElementById('cmpResults');
+
+  results.style.display = 'none';
+  error.style.display   = 'none';
+  loading.style.display = 'block';
+
+  try {
+    const [peerInfoData, peerStatusData, peerRatingData] = await Promise.all([
+      cfFetchPublic('user.info',   { handles: peerHandle }),
+      cfFetchPublic('user.status', { handle: peerHandle, count: '1000' }),
+      cfFetchPublic('user.rating', { handle: peerHandle }).catch(() => [])
+    ]);
+
+    const peerUser          = peerInfoData[0];
+    const peerAllAccepted   = peerStatusData.filter(s => s.verdict === 'OK');
+    const peerUnique        = dedupeLatestPerProblem(peerAllAccepted);
+
+    loading.style.display = 'none';
+    renderComparison(
+      myProcessedData,
+      { user: peerUser, uniqueAccepted: peerUnique, allAccepted: peerAllAccepted, ratingHistory: peerRatingData || [] }
+    );
+  } catch (err) {
+    loading.style.display = 'none';
+    error.textContent     = `Could not load peer: ${err.message}`;
+    error.style.display   = 'block';
+  }
+}
+
+function renderComparison(me, peer) {
+  const results = document.getElementById('cmpResults');
+
+  // ── Profile cards ──
+  const fillCard = (prefix, data) => {
+    document.getElementById(`cmp${prefix}Avatar`).src     = data.user.titlePhoto || data.user.avatar || '';
+    document.getElementById(`cmp${prefix}Handle`).textContent = data.user.handle;
+    document.getElementById(`cmp${prefix}Rank`).textContent   = data.user.rank || 'Unrated';
+    const rating = data.user.rating || 0;
+    const rEl = document.getElementById(`cmp${prefix}Rating`);
+    rEl.textContent  = rating || 'Unrated';
+    rEl.style.color  = getRatingColor(rating);
+  };
+  fillCard('My',   me);
+  fillCard('Peer', peer);
+
+  // ── Metrics ──
+  const meStreak   = computeStreak(me.allAccepted);
+  const peerStreak = computeStreak(peer.allAccepted);
+
+  const meRated   = me.uniqueAccepted.filter(s => s.problem.rating);
+  const peerRated = peer.uniqueAccepted.filter(s => s.problem.rating);
+  const meAvg   = meRated.length   ? Math.round(meRated.reduce((a,s)=>a+s.problem.rating,0)   / meRated.length)   : 0;
+  const peerAvg = peerRated.length ? Math.round(peerRated.reduce((a,s)=>a+s.problem.rating,0) / peerRated.length) : 0;
+
+  const metrics = [
+    { label: 'Current Rating',    me: me.user.rating||0,                   peer: peer.user.rating||0,           fmt: v => v || 'Unrated' },
+    { label: 'Max Rating',        me: me.user.maxRating||0,                peer: peer.user.maxRating||0,        fmt: v => v || 'Unrated' },
+    { label: 'Problems Solved',   me: me.uniqueAccepted.length,            peer: peer.uniqueAccepted.length,    fmt: v => v },
+    { label: 'Total Submissions', me: me.allAccepted.length,               peer: peer.allAccepted.length,       fmt: v => v },
+    { label: 'Avg Difficulty',    me: meAvg,                               peer: peerAvg,                       fmt: v => v || 'N/A' },
+    { label: 'Contests',          me: me.ratingHistory.length,             peer: peer.ratingHistory.length,     fmt: v => v },
+    { label: 'Current Streak',    me: meStreak.current,                    peer: peerStreak.current,            fmt: v => `${v} days` },
+    { label: 'Active Days',       me: meStreak.activeDays,                 peer: peerStreak.activeDays,         fmt: v => v },
+  ];
+
+  let myWins = 0;
+  const tbody = document.getElementById('cmpTableBody');
+  tbody.innerHTML = '';
+
+  for (const m of metrics) {
+    const iWin   = m.me > m.peer;
+    const theyWin = m.peer > m.me;
+    if (iWin) myWins++;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="padding:10px 16px; text-align:right; font-size:15px; font-weight:${iWin?'700':'400'};
+                 background:${iWin?'rgba(0,128,0,0.1)':'transparent'}; color:${iWin?'#006000':'#222'};">
+        ${m.fmt(m.me)}
+      </td>
+      <td style="padding:10px 16px; text-align:center; font-size:12px; font-weight:600; color:#555;
+                 border-left:1px solid #ddd; border-right:1px solid #ddd; text-transform:uppercase; letter-spacing:0.5px;">
+        ${m.label}
+      </td>
+      <td style="padding:10px 16px; text-align:left; font-size:15px; font-weight:${theyWin?'700':'400'};
+                 background:${theyWin?'rgba(200,0,0,0.08)':'transparent'}; color:${theyWin?'#a00':'#222'};">
+        ${m.fmt(m.peer)}
+      </td>
+    `;
+    tr.style.borderBottom = '1px solid #eee';
+    tbody.appendChild(tr);
+  }
+
+  // Score bar
+  const total = metrics.length;
+  document.getElementById('cmpScoreYou').textContent   = myWins;
+  document.getElementById('cmpScoreTotal').textContent = total;
+  document.getElementById('cmpScoreBar').style.width   = `${Math.round((myWins/total)*100)}%`;
+  const scoreColor = myWins >= total/2 ? '#008000' : '#a00000';
+  document.getElementById('cmpScoreYou').style.color   = scoreColor;
+  document.getElementById('cmpScoreBar').style.background = scoreColor;
+
+  // ── Charts ──
+  renderCmpDiffChart(me.uniqueAccepted, peer.uniqueAccepted, peer.user.handle);
+  renderCmpRadarChart(me.uniqueAccepted, peer.uniqueAccepted, me.user.handle, peer.user.handle);
+
+  results.style.display = 'block';
+}
+
+function diffBucket(rating) {
+  if (!rating) return 'Unrated';
+  if (rating <= 800)  return '≤800';
+  if (rating <= 1200) return '801–1200';
+  if (rating <= 1600) return '1201–1600';
+  if (rating <= 2000) return '1601–2000';
+  if (rating <= 2400) return '2001–2400';
+  return '2401+';
+}
+
+const DIFF_BUCKETS = ['Unrated','≤800','801–1200','1201–1600','1601–2000','2001–2400','2401+'];
+
+function renderCmpDiffChart(mySubs, peerSubs, peerHandle) {
+  const ctx = document.getElementById('cmpDiffChart').getContext('2d');
+  if (cmpDiffChartInstance) cmpDiffChartInstance.destroy();
+
+  const count = (subs, bucket) => subs.filter(s => diffBucket(s.problem.rating) === bucket).length;
+
+  cmpDiffChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: DIFF_BUCKETS,
+      datasets: [
+        { label: 'You',       data: DIFF_BUCKETS.map(b => count(mySubs,   b)), backgroundColor: 'rgba(0,0,128,0.7)',  borderRadius: 3 },
+        { label: peerHandle, data: DIFF_BUCKETS.map(b => count(peerSubs, b)), backgroundColor: 'rgba(180,0,0,0.6)',  borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { ticks: { color: '#333' }, grid: { display: false } },
+        y: { ticks: { color: '#333', stepSize: 1 }, grid: { color: '#eee' } }
+      }
+    }
+  });
+}
+
+function renderCmpRadarChart(mySubs, peerSubs, myHandle, peerHandle) {
+  const ctx = document.getElementById('cmpRadarChart').getContext('2d');
+  if (cmpRadarChartInstance) cmpRadarChartInstance.destroy();
+
+  // Build union of top 10 tags from both users
+  const tagCount = subs => {
+    const c = {};
+    for (const s of subs) for (const t of (s.problem.tags || [])) c[t] = (c[t]||0) + 1;
+    return c;
+  };
+  const myTags   = tagCount(mySubs);
+  const peerTags = tagCount(peerSubs);
+
+  // Pick top 10 from combined
+  const combined = {};
+  for (const [k,v] of Object.entries(myTags))   combined[k] = (combined[k]||0) + v;
+  for (const [k,v] of Object.entries(peerTags)) combined[k] = (combined[k]||0) + v;
+  const labels = Object.entries(combined).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k])=>k);
+
+  cmpRadarChartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [
+        { label: myHandle,   data: labels.map(l => myTags[l]||0),   backgroundColor: 'rgba(0,0,180,0.15)', borderColor: '#000080', pointBackgroundColor: '#000080', borderWidth: 2 },
+        { label: peerHandle, data: labels.map(l => peerTags[l]||0), backgroundColor: 'rgba(180,0,0,0.12)', borderColor: '#a00',    pointBackgroundColor: '#a00',    borderWidth: 2 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        r: {
+          ticks: { display: false },
+          pointLabels: { font: { size: 11 }, color: '#333' },
+          grid: { color: '#ddd' },
+          angleLines: { color: '#ddd' }
+        }
       }
     }
   });
